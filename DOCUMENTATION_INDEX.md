@@ -13,6 +13,14 @@ This folder contains comprehensive documentation for the repository cleanup and 
 
 Includes detailed findings, recommendations, and next steps.
 
+### 📊 [PROGRESS_REPORT_TASKS_5-7.md](./PROGRESS_REPORT_TASKS_5-7.md) (11K)
+**Progress report for Dependabot audit finalization and repo hygiene:**
+- Task 5: Update Dependabot Audit Workflow (permissions & v7 upgrade)
+- Task 6: Dependabot Audit Workflow PR merged to main
+- Task 7: Prepare repo hygiene combined PR (dependabot.yml cleanup)
+
+Includes validation results, merge readiness assessment, and PR creation instructions.
+
 ### 📋 [TASK_PROGRESS_SUMMARY.md](./TASK_PROGRESS_SUMMARY.md) (12K)
 **Summary of Parts A-D from earlier session:**
 - Part A: PR #9 rebase guide
