@@ -90,7 +90,7 @@ jobs:
             const nativeKeywords = ["node-gyp", "bindings", "native", "prebuild", "node-addon-api"];
             let touchesNative = false;
             for (const f of changedFiles) {
-              const path = f.filename || f.filename;
+              const path = f.filename || f.path;
               if (nativePathIndicators.some(p => path.includes(p))) {
                 core.info(`Native path indicator matched: ${path}`);
                 touchesNative = true;
