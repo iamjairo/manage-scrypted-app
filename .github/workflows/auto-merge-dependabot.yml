@@ -28,7 +28,7 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
-            const workflowInputPr = core.getInput('pull_request');
+            const workflowInputPr = context.payload.inputs?.pull_request;
             const contextPr = context.payload.pull_request?.number;
             const prNumber = Number(contextPr || workflowInputPr || 0);
 
@@ -84,11 +84,11 @@ jobs:
               const collectFromText = (text, source) => {
                 if (!text) return;
 
-                for (const match of text.matchAll(/from\s+v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\s+to\s+v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)/ig)) {
+                for (const match of text.matchAll(/from\s+v?(\d+\.\d+\.\d+)\s+to\s+v?(\d+\.\d+\.\d+)/ig)) {
                   fromToPairs.push({ from: match[1], to: match[2], source });
                 }
 
-                for (const match of text.matchAll(/\bv?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\b/g)) {
+                for (const match of text.matchAll(/\bv?(\d+\.\d+\.\d+)\b/g)) {
                   rawVersions.push({ version: match[1], source });
                 }
               };
@@ -290,7 +290,12 @@ jobs:
                   return;
                 }
 
-                const decoded = Buffer.from(contentResponse.data.content, contentResponse.data.encoding).toString('utf8');
+                if (contentResponse.data.encoding !== 'base64') {
+                  core.info(`Unexpected encoding for ${file.filename}: ${contentResponse.data.encoding}. Conservative skip.`);
+                  return;
+                }
+
+                const decoded = Buffer.from(contentResponse.data.content, 'base64').toString('utf8');
                 if (nativeKeywordRegex.test(decoded)) {
                   core.info(`Native keyword detected in package.json content (${file.filename}). Exiting without merge.`);
                   return;
@@ -344,7 +349,7 @@ jobs:
                 repo,
                 pull_number: pr.number,
                 merge_method: 'merge',
-                commit_title: 'chore: auto-merge Dependabot updates (patch/minor)',
+                commit_title: `chore: auto-merge Dependabot updates (patch/minor) - PR #${pr.number}`,
                 commit_message: `Auto-merged by workflow after policy checks.\n\nPR: ${pr.html_url}`,
               });
               core.info(`Successfully merged PR #${pr.number} with merge commit.`);
