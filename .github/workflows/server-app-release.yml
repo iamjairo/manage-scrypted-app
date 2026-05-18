@@ -23,11 +23,11 @@ jobs:
       - name: Detect server-app
         id: server-app
         run: |
-          if [ -d server-app ]; then
+          if [ -f server-app/package.json ] && [ -f server-app/package-lock.json ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "server-app/ not found; skipping release build."
+            echo "server-app build inputs not found; skipping release build."
           fi
 
       - name: Setup Node.js
@@ -89,7 +89,7 @@ jobs:
             server-app/release/*.deb
 
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/server-app-v') && steps.server-app.outputs.exists == 'true'
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/server-app-v') && steps.server-app.outputs.exists == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
