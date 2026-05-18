@@ -51,8 +51,8 @@ jobs:
             git remote add upstream "https://github.com/${UPSTREAM_REPO}.git"
           fi
 
-          git fetch --prune upstream "${UPSTREAM_BRANCH}"
-          git fetch --prune origin "${TARGET_BRANCH}"
+          git fetch --prune upstream "${UPSTREAM_BRANCH}:refs/remotes/upstream/${UPSTREAM_BRANCH}"
+          git fetch --prune origin "${TARGET_BRANCH}:refs/remotes/origin/${TARGET_BRANCH}"
 
           git checkout "${TARGET_BRANCH}"
           git reset --hard "origin/${TARGET_BRANCH}"
@@ -138,11 +138,12 @@ jobs:
             outcome="pr-already-open"
             details="Open upstream sync PR already exists for ${branch}."
           else
+            pr_body=$'Automated upstream sync from '"${UPSTREAM_REPO}"$'@'"${UPSTREAM_BRANCH}"$'.\n\nThis branch was created because fast-forward was not possible on '"${TARGET_BRANCH}"$'.\nReview and merge if desired.'
             pr_url="$(gh pr create \
               --base "${TARGET_BRANCH}" \
               --head "${branch}" \
               --title "chore: sync upstream ${UPSTREAM_BRANCH} ($(date -u +%Y-%m-%d))" \
-              --body "Automated upstream sync from ${UPSTREAM_REPO}@${UPSTREAM_BRANCH}.\n\nThis branch was created because fast-forward was not possible on ${TARGET_BRANCH}.\nReview and merge if desired." \
+              --body "${pr_body}" \
               --label "upstream-sync")"
             outcome="pr-opened"
             details="Fast-forward not possible; opened PR for manual review."
