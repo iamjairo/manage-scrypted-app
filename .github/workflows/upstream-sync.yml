@@ -78,6 +78,23 @@ jobs:
           # If we get here, histories diverged. Do not rewrite by default.
           # Only do destructive reset when manually dispatched with explicit force=true.
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" && "${FORCE_INPUT}" == "true" ]]; then
+            # Extra guardrail: if an upstream-sync PR is already open, keep the safe review path
+            # and skip destructive reset until that PR is resolved.
+            existing_sync_pr_url="$(gh pr list \
+              --state open \
+              --base "${TARGET_BRANCH}" \
+              --label "upstream-sync" \
+              --json url \
+              --jq '.[0].url // empty')"
+            if [[ -n "${existing_sync_pr_url}" ]]; then
+              {
+                echo "outcome=force-skipped-open-pr"
+                echo "details=Force reset skipped because an upstream-sync PR is already open."
+                echo "pr_url=${existing_sync_pr_url}"
+              } >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
             git reset --hard "upstream/${UPSTREAM_BRANCH}"
             git push --force-with-lease origin "${TARGET_BRANCH}"
             {
@@ -87,8 +104,24 @@ jobs:
             exit 0
           fi
 
-          # Non-destructive fallback: open (or reuse) a PR from a timestamped sync branch,
-          # so maintainers can review divergence instead of losing fork-specific commits.
+          # Non-destructive fallback: if an upstream-sync PR already exists, reuse it and skip
+          # creating a new branch/PR. This avoids duplicate sync PRs when divergence persists.
+          existing_sync_pr_url="$(gh pr list \
+            --state open \
+            --base "${TARGET_BRANCH}" \
+            --label "upstream-sync" \
+            --json url,headRefName \
+            --jq 'map(select(.headRefName | startswith("upstream-sync/")))[0].url // empty')"
+          if [[ -n "${existing_sync_pr_url}" ]]; then
+            {
+              echo "outcome=pr-already-open"
+              echo "details=Existing upstream-sync PR is already open; skipped new PR creation."
+              echo "pr_url=${existing_sync_pr_url}"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # No open sync PR exists, so create a timestamped branch from upstream/main and open one.
           branch="upstream-sync/$(date -u +%Y%m%d-%H%M%S)"
           git checkout -B "${branch}" "upstream/${UPSTREAM_BRANCH}"
           git push --set-upstream origin "${branch}"
