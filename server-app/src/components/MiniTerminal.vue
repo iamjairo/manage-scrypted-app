@@ -72,13 +72,15 @@ onMounted(async () => {
   window.addEventListener('resize', resizeHandler);
 });
 
-onUnmounted(async () => {
+onUnmounted(() => {
   unbindData?.();
   unbindExit?.();
   if (resizeHandler) {
     window.removeEventListener('resize', resizeHandler);
   }
-  await window.scrypted.term.close(sessionId);
+  void window.scrypted.term
+    .close(sessionId)
+    .catch((error: unknown) => console.error('Failed to close terminal session', error));
   term?.dispose();
 });
 </script>

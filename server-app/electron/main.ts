@@ -4,7 +4,7 @@ import path from 'node:path';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import type { IPty } from 'node-pty';
 import pty from 'node-pty';
-import { ensureContainer, getStatus, start, stop, streamLogs } from './docker';
+import { getStatus, start, stop, streamLogs } from './docker';
 
 const terminals = new Map<string, IPty>();
 let logTeardown: (() => void) | undefined;
@@ -115,7 +115,6 @@ app.whenReady().then(() => {
 
   ipcMain.handle('svc:status', () => getStatus());
   ipcMain.handle('svc:start', async () => {
-    await ensureContainer();
     await start();
     return getStatus();
   });

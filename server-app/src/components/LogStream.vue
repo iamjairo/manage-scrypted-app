@@ -52,12 +52,14 @@ onMounted(async () => {
   await window.scrypted.startLogs();
 });
 
-onUnmounted(async () => {
+onUnmounted(() => {
   stopLogListener?.();
   if (resizeHandler) {
     window.removeEventListener('resize', resizeHandler);
   }
-  await window.scrypted.stopLogs();
+  void window.scrypted
+    .stopLogs()
+    .catch((error: unknown) => console.error('Failed to stop log stream', error));
   term?.dispose();
 });
 </script>

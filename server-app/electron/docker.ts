@@ -54,6 +54,10 @@ export async function getStatus(): Promise<ScryptedStatus> {
   return found.inspect.State?.Running ? 'running' : 'stopped';
 }
 
+/**
+ * Ensures the `scrypted` container exists and returns its Container handle.
+ * If the container is missing, this creates it (but does not start it).
+ */
 export async function ensureContainer() {
   const found = await inspectContainer();
   if (found) {
