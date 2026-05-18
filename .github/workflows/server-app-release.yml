@@ -34,7 +34,7 @@ jobs:
         if: steps.server-app.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 20.x
           cache: npm
           cache-dependency-path: server-app/package-lock.json
 
@@ -71,8 +71,12 @@ jobs:
       - name: Verify Linux release artifacts
         if: steps.server-app.outputs.exists == 'true'
         run: |
-          ls -1 release/*.AppImage
-          ls -1 release/*.deb
+          appimages=(release/*.AppImage)
+          debs=(release/*.deb)
+          [ -e "${appimages[0]}" ]
+          [ -e "${debs[0]}" ]
+          ls -1 "${appimages[@]}"
+          ls -1 "${debs[@]}"
         working-directory: server-app
 
       - name: Upload Linux release artifacts
