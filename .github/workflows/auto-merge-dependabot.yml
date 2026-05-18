@@ -90,9 +90,15 @@ jobs:
             const nativeKeywords = ["node-gyp", "bindings", "native", "prebuild", "node-addon-api"];
             let touchesNative = false;
             for (const f of changedFiles) {
-              const path = f.filename || f.path;
-              if (nativePathIndicators.some(p => path.includes(p))) {
-                core.info(`Native path indicator matched: ${path}`);
+              const filePath = f.filename || f.path;
+              const matchesNative = nativePathIndicators.some(p => {
+                // Directory prefixes (end with /) — check if file is inside that directory
+                if (p.endsWith("/")) return filePath.startsWith(p) || filePath === p.slice(0, -1);
+                // Exact filenames like Cargo.toml / Cargo.lock
+                return filePath === p || filePath.endsWith("/" + p);
+              });
+              if (matchesNative) {
+                core.info(`Native path indicator matched: ${filePath}`);
                 touchesNative = true;
                 break;
               }
