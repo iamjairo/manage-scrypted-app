@@ -97,8 +97,9 @@ jobs:
               exit 0
             fi
 
+            force_push_base_sha="$(git rev-parse "origin/${TARGET_BRANCH}")"
             git reset --hard "upstream/${UPSTREAM_BRANCH}"
-            git push --force-with-lease origin "${TARGET_BRANCH}"
+            git push --force-with-lease="refs/heads/${TARGET_BRANCH}:${force_push_base_sha}" origin "${TARGET_BRANCH}"
             {
               echo "outcome=force-reset"
               echo "details=Force reset requested; ${TARGET_BRANCH} now matches upstream/${UPSTREAM_BRANCH}."
