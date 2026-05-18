@@ -2,6 +2,18 @@
 
 This folder contains comprehensive documentation for the repository cleanup and branch preparation work completed on 2026-05-18.
 
+## 🎯 Quick Start
+
+### [FINAL_ACTION_PLAN.md](./FINAL_ACTION_PLAN.md) ⭐ START HERE
+**Simple 3-step guide to complete the repository cleanup:**
+- Click 3 PR URLs to create PRs
+- Reply with merge confirmation
+- Done in 15 minutes!
+
+Clear, actionable steps with all PR URLs and details.
+
+---
+
 ## Main Reports
 
 ### 📊 [PROGRESS_REPORT_TASKS_1-4.md](./PROGRESS_REPORT_TASKS_1-4.md) (14K)
