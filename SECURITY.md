@@ -46,12 +46,14 @@ This policy covers code in this repository. It does **not** cover:
 
 ## Hardening notes for operators
 
-If you are deploying the `infra/` stack:
+If you are deploying this project or the upstream Scrypted UI in your own
+environment:
 
-- Keep `caddy:2` and `ghcr.io/koush/scrypted:latest` pulled regularly
-  (Dependabot's `docker-compose` ecosystem covers `infra/`).
+- Keep your reverse proxy, container images, and other deployment dependencies
+  updated on a regular schedule.
 - Do not expose Scrypted's `10080`/`10443` ports directly to the internet —
-  let Caddy front them on `443` with Let's Encrypt.
-- Use the `Caddyfile` (Let's Encrypt) variant rather than `Caddyfile.lan`
-  when serving on a public domain.
-- Rotate Scrypted admin credentials after the macOS→Linux migration.
+  place them behind a properly configured reverse proxy on `443` with TLS.
+- For public domains, use a certificate configuration suitable for
+  internet-facing services rather than a LAN-only setup.
+- Rotate Scrypted admin credentials after migrations, restores, or other
+  administrative recovery events.
