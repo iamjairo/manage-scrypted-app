@@ -59,8 +59,10 @@ jobs:
 
           # Safe-by-default path: only fast-forward main. If this succeeds, either we're already
           # up-to-date or we can push a linear update with no rewritten history.
+          before_sha="$(git rev-parse "origin/${TARGET_BRANCH}")"
           if git merge --ff-only "upstream/${UPSTREAM_BRANCH}"; then
-            if git diff --quiet "origin/${TARGET_BRANCH}"..HEAD; then
+            after_sha="$(git rev-parse HEAD)"
+            if [[ "${before_sha}" == "${after_sha}" ]]; then
               outcome="up-to-date"
               details="No changes needed; fork already matches upstream."
             else
@@ -95,8 +97,9 @@ jobs:
               exit 0
             fi
 
+            force_push_base_sha="$(git rev-parse "origin/${TARGET_BRANCH}")"
             git reset --hard "upstream/${UPSTREAM_BRANCH}"
-            git push --force-with-lease origin "${TARGET_BRANCH}"
+            git push --force-with-lease="refs/heads/${TARGET_BRANCH}:${force_push_base_sha}" origin "${TARGET_BRANCH}"
             {
               echo "outcome=force-reset"
               echo "details=Force reset requested; ${TARGET_BRANCH} now matches upstream/${UPSTREAM_BRANCH}."
