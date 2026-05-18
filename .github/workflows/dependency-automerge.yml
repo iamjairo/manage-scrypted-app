@@ -1,0 +1,179 @@
+name: Dependency auto-merge
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+  check_suite:
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+  statuses: read
+
+concurrency:
+  group: dependency-automerge-${{ github.event.pull_request.number || github.event.check_suite.head_sha }}
+  cancel-in-progress: true
+
+jobs:
+  evaluate-and-merge:
+    if: github.event_name == 'pull_request_target' || github.event_name == 'check_suite'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve pull request context
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let prNumber = null;
+
+            if (context.eventName === 'pull_request_target') {
+              prNumber = context.payload.pull_request?.number;
+            } else if (context.eventName === 'check_suite') {
+              const prs = context.payload.check_suite?.pull_requests || [];
+              if (prs.length > 0) {
+                prNumber = prs[0].number;
+              }
+            }
+
+            if (!prNumber) {
+              core.notice('No PR associated with this event; skipping.');
+              core.setOutput('skip', 'true');
+              return;
+            }
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            core.setOutput('skip', 'false');
+            core.setOutput('number', String(pr.number));
+            core.setOutput('sha', pr.head.sha);
+            core.setOutput('author', pr.user?.login || '');
+
+      - name: Fetch Dependabot metadata
+        if: steps.pr.outputs.skip != 'true'
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.pr.outputs.number }}
+
+      - name: Evaluate auto-merge policy and merge if safe
+        if: steps.pr.outputs.skip != 'true'
+        uses: actions/github-script@v7
+        env:
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type || '' }}
+          DEPENDENCY_NAMES: ${{ steps.metadata.outputs.dependency-names || '' }}
+        with:
+          script: |
+            const prNumber = Number('${{ steps.pr.outputs.number }}');
+            const allowedUpdateType = ['version-update:semver-patch', 'version-update:semver-minor'];
+            const updateType = process.env.UPDATE_TYPE || '';
+            const dependencyNames = (process.env.DEPENDENCY_NAMES || '')
+              .split(',')
+              .map(s => s.trim())
+              .filter(Boolean);
+
+            const nativeDependencyPatterns = [
+              /^electron$/i,
+              /^node-pty$/i,
+              /^node-gyp$/i,
+              /^@tauri-apps\//i,
+              /^tauri(?:$|[-/])/i,
+            ];
+
+            const touchesNativeDependency = dependencyNames.some(name =>
+              nativeDependencyPatterns.some(pattern => pattern.test(name))
+            );
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            const isDependencyCandidate =
+              pr.user?.login === 'dependabot[bot]' ||
+              (pr.labels || []).some(label => label.name === 'dependencies');
+
+            if (!isDependencyCandidate) {
+              core.notice(`PR #${prNumber} is not a dependency candidate; skipping.`);
+              return;
+            }
+
+            if (!allowedUpdateType.includes(updateType)) {
+              core.notice(`PR #${prNumber} update type '${updateType || 'unknown'}' is not patch/minor; skipping.`);
+              return;
+            }
+
+            if (touchesNativeDependency) {
+              core.notice(`PR #${prNumber} includes native dependency updates (${dependencyNames.join(', ')}); skipping.`);
+              return;
+            }
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              per_page: 100,
+            });
+
+            const touchesNativePaths = files.some(file => {
+              const path = file.filename;
+              return path.startsWith('server-app/')
+                || path.startsWith('server-app-tauri/')
+                || path.endsWith('Cargo.toml')
+                || path.endsWith('Cargo.lock')
+                || path.endsWith('.rs');
+            });
+
+            if (touchesNativePaths) {
+              core.notice(`PR #${prNumber} touches native build/rust paths; skipping.`);
+              return;
+            }
+
+            const sha = pr.head.sha;
+
+            const combinedStatus = await github.rest.repos.getCombinedStatusForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: sha,
+            });
+
+            if (combinedStatus.data.state !== 'success') {
+              core.notice(`PR #${prNumber} checks are not green yet (combined status: ${combinedStatus.data.state}); skipping for now.`);
+              return;
+            }
+
+            const checkRuns = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: sha,
+              filter: 'latest',
+              per_page: 100,
+            });
+
+            const disallowedCheckRun = checkRuns.data.check_runs.find(check =>
+              check.status !== 'completed'
+              || !['success', 'neutral', 'skipped'].includes(check.conclusion || '')
+            );
+
+            if (disallowedCheckRun) {
+              core.notice(`PR #${prNumber} has non-green check run '${disallowedCheckRun.name}' (${disallowedCheckRun.status}/${disallowedCheckRun.conclusion}); skipping.`);
+              return;
+            }
+
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              merge_method: 'squash',
+              commit_title: `deps: auto-merge #${prNumber}`,
+            });
+
+            core.notice(`PR #${prNumber} met low-risk dependency policy and was auto-merged.`);
