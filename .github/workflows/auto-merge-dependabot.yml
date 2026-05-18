@@ -277,28 +277,62 @@ jobs:
                 return;
               }
 
-              try {
-                const contentResponse = await github.rest.repos.getContent({
-                  owner,
-                  repo,
-                  path: file.filename,
-                  ref: pr.head.sha,
-                });
+            // 4) Inspect changed files to detect native/Cargo or known native indicators
+            const changedFiles = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+            core.info(`Changed files count: ${changedFiles.length}`);
 
-                if (!('content' in contentResponse.data)) {
-                  core.info(`Could not inspect package.json content for ${file.filename}; conservative skip.`);
-                  return;
-                }
+            // Define simple native checks
+            const nativePathIndicators = [
+              "Cargo.toml",
+              "server-app-tauri/",
+              "server-app/",
+              "Cargo.lock",
+            ];
+            const nativeKeywords = ["node-gyp", "bindings", "native", "prebuild", "node-addon-api"];
+            let touchesNative = false;
+            for (const f of changedFiles) {
+              const filePath = f.filename || f.path;
+              const matchesNative = nativePathIndicators.some(p => {
+                // Directory prefixes (end with /) — check if file is inside that directory
+                if (p.endsWith("/")) return filePath.startsWith(p);
+                // Exact filenames like Cargo.toml / Cargo.lock
+                return filePath === p || filePath.endsWith("/" + p);
+              });
+              if (matchesNative) {
+                core.info(`Native path indicator matched: ${filePath}`);
+                touchesNative = true;
+                break;
+              }
+            }
 
-                if (contentResponse.data.encoding !== 'base64') {
-                  core.info(`Unexpected encoding for ${file.filename}: ${contentResponse.data.encoding}. Conservative skip.`);
-                  return;
-                }
-
-                const decoded = Buffer.from(contentResponse.data.content, 'base64').toString('utf8');
-                if (nativeKeywordRegex.test(decoded)) {
-                  core.info(`Native keyword detected in package.json content (${file.filename}). Exiting without merge.`);
-                  return;
+            if (!touchesNative) {
+              // If package.json changed, fetch its content at head and look for native keywords
+              const pkgChanges = changedFiles.filter(f => f.filename.endsWith("package.json"));
+              for (const p of pkgChanges) {
+                core.info(`package.json changed at: ${p.filename} — inspecting for native build keywords`);
+                try {
+                  const contentResp = await github.rest.repos.getContent({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    path: p.filename,
+                    ref: pr.head.sha,
+                  });
+                  const contentBuffer = Buffer.from(contentResp.data.content, contentResp.data.encoding);
+                  const pkgText = contentBuffer.toString("utf8");
+                  if (nativeKeywords.some(k => pkgText.includes(k))) {
+                    core.info(`Native keyword found in ${p.filename} — will NOT auto-merge.`);
+                    touchesNative = true;
+                    break;
+                  }
+                } catch (err) {
+                  core.info(`Failed to fetch ${p.filename} at head ref: ${err}`);
+                  // Conservative approach: treat inability to inspect as potential native -> skip merge
+                  touchesNative = true;
+                  break;
                 }
               } catch (error) {
                 core.info(`Failed to inspect ${file.filename}: ${error.message}. Conservative skip.`);
@@ -313,14 +347,23 @@ jobs:
               return;
             }
 
-            const requiredChecks = await getRequiredChecks(pr.base.ref);
-            let checksReady = false;
-            for (let attempt = 1; attempt <= 20; attempt += 1) {
-              const state = await checkStates(pr.head.sha, requiredChecks);
-              core.info(`Checks poll ${attempt}/20: ${state.state} - ${state.detail}`);
-
-              if (state.state === 'failure') {
-                core.info('Status checks failed. Exiting without merge.');
+            // 5) Wait for required status checks to pass (best-effort polling)
+            const ref = pr.head.sha;
+            core.info(`Waiting for checks/statuses on ref ${ref} (will poll up to 10 times, 15s interval).`);
+            let attempts = 0;
+            let combinedState = null;
+            while (attempts < 10) {
+              attempts++;
+              const status = await github.rest.repos.getCombinedStatusForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref,
+              });
+              combinedState = status.data.state; // 'success', 'failure', 'pending'
+              core.info(`Attempt ${attempts}: combined status = ${combinedState}`);
+              if (combinedState === "success") break;
+              if (combinedState === "failure") {
+                core.info("Status checks failing — will not merge.");
                 return;
               }
 
@@ -337,20 +380,25 @@ jobs:
               return;
             }
 
-            const mergeablePr = await getMergeablePr(pr.number);
-            if (!mergeablePr.mergeable) {
-              core.info(`PR is not mergeable (mergeable_state=${mergeablePr.mergeable_state}). Exiting without merge.`);
+            // Re-check PR mergeable state
+            const prDetails = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+            if (!prDetails.data.mergeable) {
+              core.info(`PR mergeable state is false (state=${prDetails.data.mergeable_state}) — skipping.`);
               return;
             }
 
             try {
               await github.rest.pulls.merge({
-                owner,
-                repo,
-                pull_number: pr.number,
-                merge_method: 'merge',
-                commit_title: `chore: auto-merge Dependabot updates (patch/minor) - PR #${pr.number}`,
-                commit_message: `Auto-merged by workflow after policy checks.\n\nPR: ${pr.html_url}`,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                merge_method: "merge",
+                commit_title: `chore: auto-merge Dependabot updates (patch/minor) — PR #${prNumber}`,
+                commit_message: `Auto-merged by workflow: patch/minor dependency bump from Dependabot.\n\nPR: ${pr.html_url}`,
               });
               core.info(`Successfully merged PR #${pr.number} with merge commit.`);
             } catch (error) {
