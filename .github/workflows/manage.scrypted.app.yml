@@ -36,7 +36,7 @@ jobs:
             echo "::warning::Skipping deploy: FONTAWESOME_NPM_TOKEN is not configured."
           else
             echo "token_available=true" >> "$GITHUB_OUTPUT"
-            echo "FONTAWESOME_NPM_TOKEN is configured."
+            echo "Preflight validation passed."
           fi
 
   # Single deploy job since we're just deploying
