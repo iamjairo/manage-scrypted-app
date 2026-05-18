@@ -28,6 +28,7 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
+            // ── Resolve PR number ────────────────────────────────────────────────
             const workflowInputPr = context.payload.inputs?.pull_request;
             const contextPr = context.payload.pull_request?.number;
             const prNumber = Number(contextPr || workflowInputPr || 0);
@@ -37,16 +38,25 @@ jobs:
               return;
             }
 
+            // ── Policy constants ─────────────────────────────────────────────────
             const allowedAuthors = new Set(['dependabot[bot]', 'dependabot']);
+
+            // Paths that indicate native/Cargo/Tauri/Electron surfaces — always skip.
             const nativePathPatterns = [
               /^Cargo\.toml$/i,
               /^Cargo\.lock$/i,
               /^server-app-tauri\//i,
+              /^server-app\//i,
               /^src-tauri\//i,
+              /\.rs$/i,
               /(^|\/)native\//i,
               /(^|\/)rust\//i,
             ];
-            const nativeKeywordRegex = /\b(node-gyp|bindings|native|prebuild|node-addon-api|nan)\b/i;
+
+            // Keywords in package.json patches that indicate native build dependencies.
+            const nativeKeywordRegex = /\b(node-gyp|bindings|native|prebuild|node-addon-api|nan|electron|tauri)\b/i;
+
+            // ── Helper: parse semver tuple ────────────────────────────────────────
             const parseSemver = (version) => {
               const [major, minor, patch] = version
                 .replace(/^v/i, '')
@@ -59,6 +69,7 @@ jobs:
               return { major, minor, patch };
             };
 
+            // ── Helper: compare two semver strings ───────────────────────────────
             const compareSemver = (fromVersion, toVersion) => {
               const from = parseSemver(fromVersion);
               const to = parseSemver(toVersion);
@@ -77,6 +88,7 @@ jobs:
               return 'none';
             };
 
+            // ── Helper: classify the version bump from PR title/body/commits ─────
             const classifyBump = async (pr, commits) => {
               const fromToPairs = [];
               const rawVersions = [];
@@ -137,8 +149,10 @@ jobs:
               return { classification: 'none', reason: 'No patch/minor increase detected.' };
             };
 
+            // ── Helper: promise-based sleep ───────────────────────────────────────
             const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+            // ── Helper: read required checks from branch protection ───────────────
             const getRequiredChecks = async (baseRef) => {
               try {
                 const branch = await github.rest.repos.getBranch({ owner, repo, branch: baseRef });
@@ -155,6 +169,7 @@ jobs:
               }
             };
 
+            // ── Helper: snapshot the current check/status state for a SHA ─────────
             const checkStates = async (sha, requiredChecks) => {
               const [combined, checkRuns] = await Promise.all([
                 github.rest.repos.getCombinedStatusForRef({ owner, repo, ref: sha }),
@@ -215,6 +230,7 @@ jobs:
               return { state: 'success', detail: 'All required checks and statuses are successful.' };
             };
 
+            // ── Helper: poll until GitHub resolves the mergeable flag ─────────────
             const getMergeablePr = async (number) => {
               for (let attempt = 1; attempt <= 6; attempt += 1) {
                 const current = await github.rest.pulls.get({ owner, repo, pull_number: number });
@@ -231,21 +247,29 @@ jobs:
               return fallback.data;
             };
 
+            // ══════════════════════════════════════════════════════════════════════
+            // Main flow
+            // ══════════════════════════════════════════════════════════════════════
+
+            // 1) Fetch PR metadata.
             const pr = (await github.rest.pulls.get({ owner, repo, pull_number: prNumber })).data;
             core.info(`Evaluating PR #${pr.number}: ${pr.title}`);
             core.info(`Author=${pr.user.login}, labels=${(pr.labels || []).map((l) => l.name).join(',')}`);
 
+            // 2) Author guard — only Dependabot PRs are eligible.
             if (!allowedAuthors.has(pr.user.login)) {
               core.info(`Author '${pr.user.login}' is not Dependabot. Exiting without merge.`);
               return;
             }
 
+            // 3) Label guard — must carry the "dependencies" label.
             const labels = new Set((pr.labels || []).map((label) => label.name));
             if (!labels.has('dependencies')) {
               core.info('Label "dependencies" is missing. Exiting without merge.');
               return;
             }
 
+            // 4) Fetch commits and changed files in parallel.
             const [commits, changedFiles] = await Promise.all([
               github.paginate(github.rest.pulls.listCommits, {
                 owner,
@@ -263,12 +287,14 @@ jobs:
 
             core.info(`PR has ${commits.length} commit(s) and ${changedFiles.length} changed file(s).`);
 
+            // 5) Reject if any native/Cargo/Tauri/Electron path is touched.
             const nativePathMatch = changedFiles.find((file) => nativePathPatterns.some((pattern) => pattern.test(file.filename)));
             if (nativePathMatch) {
               core.info(`Native or Cargo path touched (${nativePathMatch.filename}). Exiting without merge.`);
               return;
             }
 
+            // 6) Reject if any package.json patch contains native build keywords.
             const packageJsonFiles = changedFiles.filter((file) => file.filename.endsWith('package.json'));
             for (const file of packageJsonFiles) {
               const patchText = file.patch || '';
@@ -276,70 +302,9 @@ jobs:
                 core.info(`Native keyword detected in package.json patch (${file.filename}). Exiting without merge.`);
                 return;
               }
-
-            // 4) Inspect changed files to detect native/Cargo or known native indicators
-            const changedFiles = await github.paginate(github.rest.pulls.listFiles, {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-            });
-            core.info(`Changed files count: ${changedFiles.length}`);
-
-            // Define simple native checks
-            const nativePathIndicators = [
-              "Cargo.toml",
-              "server-app-tauri/",
-              "server-app/",
-              "Cargo.lock",
-            ];
-            const nativeKeywords = ["node-gyp", "bindings", "native", "prebuild", "node-addon-api"];
-            let touchesNative = false;
-            for (const f of changedFiles) {
-              const filePath = f.filename || f.path;
-              const matchesNative = nativePathIndicators.some(p => {
-                // Directory prefixes (end with /) — check if file is inside that directory
-                if (p.endsWith("/")) return filePath.startsWith(p);
-                // Exact filenames like Cargo.toml / Cargo.lock
-                return filePath === p || filePath.endsWith("/" + p);
-              });
-              if (matchesNative) {
-                core.info(`Native path indicator matched: ${filePath}`);
-                touchesNative = true;
-                break;
-              }
             }
 
-            if (!touchesNative) {
-              // If package.json changed, fetch its content at head and look for native keywords
-              const pkgChanges = changedFiles.filter(f => f.filename.endsWith("package.json"));
-              for (const p of pkgChanges) {
-                core.info(`package.json changed at: ${p.filename} — inspecting for native build keywords`);
-                try {
-                  const contentResp = await github.rest.repos.getContent({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    path: p.filename,
-                    ref: pr.head.sha,
-                  });
-                  const contentBuffer = Buffer.from(contentResp.data.content, contentResp.data.encoding);
-                  const pkgText = contentBuffer.toString("utf8");
-                  if (nativeKeywords.some(k => pkgText.includes(k))) {
-                    core.info(`Native keyword found in ${p.filename} — will NOT auto-merge.`);
-                    touchesNative = true;
-                    break;
-                  }
-                } catch (err) {
-                  core.info(`Failed to fetch ${p.filename} at head ref: ${err}`);
-                  // Conservative approach: treat inability to inspect as potential native -> skip merge
-                  touchesNative = true;
-                  break;
-                }
-              } catch (error) {
-                core.info(`Failed to inspect ${file.filename}: ${error.message}. Conservative skip.`);
-                return;
-              }
-            }
-
+            // 7) Classify the semver bump; only patch/minor are eligible.
             const versionDecision = await classifyBump(pr, commits);
             core.info(`Version classification: ${versionDecision.classification} (${versionDecision.reason})`);
             if (versionDecision.classification !== 'eligible') {
@@ -347,32 +312,28 @@ jobs:
               return;
             }
 
-            // 5) Wait for required status checks to pass (best-effort polling)
-            const ref = pr.head.sha;
-            core.info(`Waiting for checks/statuses on ref ${ref} (will poll up to 10 times, 15s interval).`);
-            let attempts = 0;
-            let combinedState = null;
-            while (attempts < 10) {
-              attempts++;
-              const status = await github.rest.repos.getCombinedStatusForRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref,
-              });
-              combinedState = status.data.state; // 'success', 'failure', 'pending'
-              core.info(`Attempt ${attempts}: combined status = ${combinedState}`);
-              if (combinedState === "success") break;
-              if (combinedState === "failure") {
-                core.info("Status checks failing — will not merge.");
-                return;
-              }
+            // 8) Wait for required checks/statuses to pass (up to 12 polls × 15 s = 3 min).
+            const requiredChecks = await getRequiredChecks(pr.base.ref);
+            const sha = pr.head.sha;
+            core.info(`Polling checks/statuses on ref ${sha} (up to 12 attempts, 15 s apart).`);
+            let checksReady = false;
+            for (let attempt = 1; attempt <= 12; attempt += 1) {
+              const state = await checkStates(sha, requiredChecks);
+              core.info(`Check poll attempt ${attempt}: ${state.state} — ${state.detail}`);
 
               if (state.state === 'success') {
                 checksReady = true;
                 break;
               }
 
-              await wait(15000);
+              if (state.state === 'failure') {
+                core.info('Required checks are failing. Exiting without merge.');
+                return;
+              }
+
+              if (attempt < 12) {
+                await wait(15000);
+              }
             }
 
             if (!checksReady) {
@@ -380,23 +341,22 @@ jobs:
               return;
             }
 
-            // Re-check PR mergeable state
-            const prDetails = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-            });
-            if (!prDetails.data.mergeable) {
-              core.info(`PR mergeable state is false (state=${prDetails.data.mergeable_state}) — skipping.`);
+            // 9) Confirm the PR is mergeable (GitHub may need a moment to compute this).
+            const mergeablePr = await getMergeablePr(prNumber);
+            core.info(`PR mergeable=${mergeablePr.mergeable}, mergeable_state=${mergeablePr.mergeable_state}`);
+
+            if (!mergeablePr.mergeable) {
+              core.info(`PR is not mergeable (state=${mergeablePr.mergeable_state}). Exiting without merge.`);
               return;
             }
 
+            // 10) Merge with a standard merge commit.
             try {
               await github.rest.pulls.merge({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+                owner,
+                repo,
                 pull_number: prNumber,
-                merge_method: "merge",
+                merge_method: 'merge',
                 commit_title: `chore: auto-merge Dependabot updates (patch/minor) — PR #${prNumber}`,
                 commit_message: `Auto-merged by workflow: patch/minor dependency bump from Dependabot.\n\nPR: ${pr.html_url}`,
               });
