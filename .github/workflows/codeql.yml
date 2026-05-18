@@ -38,7 +38,7 @@ jobs:
             build-mode: manual
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Guard — skip Rust when src-tauri is absent
         id: guard
@@ -52,7 +52,7 @@ jobs:
 
       - name: Initialize CodeQL
         if: steps.guard.outputs.skip != 'true'
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
