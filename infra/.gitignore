@@ -1,0 +1,9 @@
+# Runtime volumes — created by Docker at first launch
+caddy_data/
+caddy_config/
+scrypted_volume/
+
+# Built UI assets — populated by `npm run build && cp -r dist/* infra/ui/`
+# Ignore contents of ui/ but keep the .gitkeep placeholder.
+ui/*
+!ui/.gitkeep
