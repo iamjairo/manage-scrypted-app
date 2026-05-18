@@ -138,7 +138,7 @@ jobs:
             outcome="pr-already-open"
             details="Open upstream sync PR already exists for ${branch}."
           else
-            pr_body=$'Automated upstream sync from '"${UPSTREAM_REPO}"$'@'"${UPSTREAM_BRANCH}"$'.\n\nThis branch was created because fast-forward was not possible on '"${TARGET_BRANCH}"$'.\nReview and merge if desired.'
+            pr_body="$(printf 'Automated upstream sync from %s@%s.\n\nThis branch was created because fast-forward was not possible on %s.\nReview and merge if desired.\n' "${UPSTREAM_REPO}" "${UPSTREAM_BRANCH}" "${TARGET_BRANCH}")"
             pr_url="$(gh pr create \
               --base "${TARGET_BRANCH}" \
               --head "${branch}" \
