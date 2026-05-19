@@ -25,6 +25,12 @@ This document freezes the integration contracts required by `HANDOFF-GO-NO-GO-CH
   - `/scrypted/*` => proxied to Scrypted
   - everything else => static SPA served from `/srv/ui` with SPA fallback (`index.html`)
 
+### Security migration note (planned for Phase 2 hardening)
+
+- Current loopback proxy contract uses `tls_insecure_skip_verify` because upstream Scrypted loopback TLS is self-signed by default.
+- Hardening target: replace this with explicit trust (local CA/imported trust chain) or certificate pinning for loopback upstream validation.
+- Any migration must preserve existing `/scrypted/*` routing and websocket behavior.
+
 ## 4) Operations ownership contract (frozen)
 
 - **Runtime ops owner**: repository maintainers/operators for this fork.
