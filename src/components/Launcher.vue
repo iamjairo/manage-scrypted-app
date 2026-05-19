@@ -1,7 +1,8 @@
 <template>
-  <div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center" :style="{
-    background: deepPurple.accent4,
-  }">
+  <div
+    class="bg-background"
+    style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center"
+  >
     <div>
       <v-card :width="320" theme="light" class="rounded-lg">
         <template v-slot:title>
@@ -123,7 +124,6 @@ import { getAllDevices } from '@/common/devices';
 import { getFaPrefix } from '@/util/device-icons';
 import { combineBaseUrl } from '@scrypted/client/src/index';
 import { LauncherApplication, ScryptedInterface } from '@scrypted/types';
-import { deepPurple } from 'vuetify/lib/util/colors';
 import ToolbarTooltipButton from './ToolbarTooltipButton.vue';
 import { computed } from 'vue';
 
