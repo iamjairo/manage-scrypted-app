@@ -1,23 +1,21 @@
 <template>
   <v-navigation-drawer @update:model-value="emits('update:modelValue', $event)" :model-value="modelValue" app clipped
-    fixed :rail="!isTouchDevice" :permanent="!isTouchDevice">
-    <v-list density="compact" nav>
-      <template v-for="(itemGroup, index) of itemGroups" :key="itemGroup.title">
-        <v-list-subheader v-if="itemGroup.title && isTouchDevice">{{ itemGroup.title }}</v-list-subheader>
-        <v-divider v-if="itemGroup.title && !isTouchDevice"></v-divider>
+    fixed :permanent="!isTouchDevice" width="240" class="iot-drawer" color="surface">
+    <v-list density="comfortable" nav class="iot-drawer-list">
+      <template v-for="(itemGroup, index) of itemGroups" :key="itemGroup.title || index">
+        <v-list-subheader v-if="itemGroup.title" class="iot-drawer-subheader">{{ itemGroup.title }}</v-list-subheader>
         <v-list-item v-for="item of itemGroup.items" link :href="item.href" :target="item.target" :to="item.to"
-          @click="item.click" :active="item.active?.()" :title="item.title">
+          @click="item.click" :active="item.active?.()" :title="item.title" class="iot-drawer-item"
+          active-color="primary">
           <template v-slot:prepend>
             <template v-if="item.badge">
               <v-badge color="error" :content="!item.badgeIcon && item.badge" :icon="item.badgeIcon && item.badge">
-                <v-icon>{{ item.icon }}</v-icon>
+                <v-icon size="small">{{ item.icon }}</v-icon>
               </v-badge>
             </template>
-            <v-icon v-else>{{ item.icon }}</v-icon>
+            <v-icon v-else size="small">{{ item.icon }}</v-icon>
           </template>
-          <v-tooltip v-if="!isTouchDevice" activator="parent" location="end">{{ item.title }}</v-tooltip>
         </v-list-item>
-        <v-divider v-if="index"></v-divider>
       </template>
     </v-list>
   </v-navigation-drawer>
@@ -170,3 +168,46 @@ const itemGroups = computed(() => {
   return itemGroups;
 })
 </script>
+
+<style scoped>
+/* IoT Dashboard signature look on the side nav. */
+.iot-drawer {
+  border-right: 1px solid rgba(34, 211, 238, 0.10);
+}
+.iot-drawer-subheader {
+  font-size: 10px !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.7) !important;
+  padding-top: 14px !important;
+  padding-bottom: 4px !important;
+  min-height: auto !important;
+}
+.iot-drawer-list {
+  padding: 8px 10px;
+}
+.iot-drawer-item {
+  border-radius: 10px !important;
+  margin-bottom: 2px;
+  min-height: 40px !important;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.iot-drawer-item :deep(.v-list-item__prepend) {
+  width: 28px;
+}
+.iot-drawer-item :deep(.v-list-item-title) {
+  font-size: 13px;
+  font-weight: 500;
+}
+.iot-drawer-item:hover {
+  background-color: rgba(34, 211, 238, 0.06) !important;
+}
+.iot-drawer-item.v-list-item--active {
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.14), rgba(34, 211, 238, 0.04)) !important;
+  color: #22d3ee !important;
+  box-shadow: inset 3px 0 0 #22d3ee;
+}
+.iot-drawer-item.v-list-item--active :deep(.v-icon) {
+  color: #22d3ee !important;
+}
+</style>
