@@ -26,13 +26,18 @@ Before declaring handoff readiness, complete:
 
 ## What remains in-flight (as of handoff)
 
-- Phase 2 execution tracks (B-D) per the checklist.
+- Phase 2 execution tracks (C-D) per the checklist.
 - Integration-level test expansion and hardening evidence.
 
 Phase 2A status (2026-05-19):
 
 - Track A contract/spec package completed:
   - [`PHASE2A-UI-REMASTER-2026-05-19.md`](PHASE2A-UI-REMASTER-2026-05-19.md)
+
+Phase 2B status (2026-05-19):
+
+- Track B runtime decision/policy freeze completed:
+  - [`PHASE2B-RUNTIME-DECISION-2026-05-19.md`](PHASE2B-RUNTIME-DECISION-2026-05-19.md)
 
 ## Integration contract recommendations
 

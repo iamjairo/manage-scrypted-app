@@ -51,10 +51,11 @@ If any item above is unchecked, declare **No-Go** for Phase 1 completion.
   - Evidence: [`PHASE2A-UI-REMASTER-2026-05-19.md`](PHASE2A-UI-REMASTER-2026-05-19.md)
 
 ### Track B: Service/app runtime model (server app decision)
-- [ ] Select canonical runtime path (Electron, Tauri, or no desktop runtime in first release).
-- [ ] Define lifecycle expectations (background run, reconnect behavior, health model).
-- [ ] Freeze packaging/distribution/support policy for chosen runtime.
-- [ ] Keep non-canonical runtime tracks out of critical path.
+- [x] Select canonical runtime path (Electron, Tauri, or no desktop runtime in first release).
+- [x] Define lifecycle expectations (background run, reconnect behavior, health model).
+- [x] Freeze packaging/distribution/support policy for chosen runtime.
+- [x] Keep non-canonical runtime tracks out of critical path.
+  - Evidence: [`PHASE2B-RUNTIME-DECISION-2026-05-19.md`](PHASE2B-RUNTIME-DECISION-2026-05-19.md)
 
 ### Track C: Integration QA and security hardening
 - [ ] Add integration-level validation for routing/auth/API/WS contracts.

@@ -20,6 +20,7 @@ Provide an operator-facing desktop control layer for Scrypted runtime lifecycle 
 
 - Tracks exist in PR/workstream context and should be treated independently from baseline integration.
 - If referenced in docs before landing on `main`, mark clearly as planned/in-progress to avoid broken expectations.
+- Phase 2B decision (2026-05-19): no desktop runtime is canonical for first release; Electron/Tauri remain non-canonical tracks pending later promotion.
 
 ## Decision gate required
 
