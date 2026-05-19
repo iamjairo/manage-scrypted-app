@@ -178,52 +178,54 @@ cat Caddy/README.md 2>/dev/null || echo "No README"
 
 ### 3.2 "Development IoT-Dashboard" Directory
 
-**Current state:**
+**Status:** ✅ **COMPLETED** - Removed from main (2026-05-19)
+
+**What it was:**
 ```
 Development IoT-Dashboard/
-└── (unknown contents)
+├── RE-MASTERED (project scope document)
+└── Branch/ (3 agent audit summaries)
 ```
 
-**Issue:** Root-level directory with unclear purpose
+**Action Taken:** ✅ **REMOVED** - Meta-tracking folder, historical artifacts only
 
-**Action:** ⚠️ **INVESTIGATE** - could be work-in-progress or old artifact
+**Content Preserved:**
+- `RE-MASTERED` → `.github/docs/archive-2026-05-19/PROJECT-SCOPE-RE-MASTERED.md`
+- Branch audit summaries → `.github/docs/archive-2026-05-19/competing-agent-audits/`
 
-**Execution:**
-1. Examine directory contents
-2. If it's draft integration work, move to separate feature branch
-3. If it's old artifact, remove or archive
-4. If it's current, document in README and INDEX
+**Rationale:**
+- No active implementation code, only meta-tracking documentation
+- Root-level "Development" folder misleadingly suggested active IoT Dashboard implementation
+- Meta-tracking served its purpose during multi-agent audit phase
+- Agent work now consolidated to canonical branch
 
-**Investigation needed:**
-```bash
-ls -la "Development IoT-Dashboard/"
-find "Development IoT-Dashboard/" -type f | head -20
-```
+**Commit:** 577d4a0
 
 ---
 
 ### 3.3 CLAUDE_AUDIT_FIX Directory
 
-**Current state:**
+**Status:** ✅ **COMPLETED** - Removed from main (2026-05-19)
+
+**What it was:**
 ```
 CLAUDE_AUDIT_FIX/
-└── (unknown contents)
+└── 16 markdown files (audit reports, cleanup guides, progress reports)
 ```
 
-**Issue:** Root-level directory with unclear purpose, likely temporary
+**Action Taken:** ✅ **REMOVED** - Historical agent audit artifacts
 
-**Action:** ⚠️ **INVESTIGATE and likely REMOVE**
+**Content Preserved:**
+- All 16 files → `.github/docs/archive-2026-05-19/CLAUDE_AUDIT_FIX/`
+- Files included: audit reports, cleanup action items, PR rebase guides, progress reports
 
-**Execution:**
-1. Examine directory contents
-2. If it contains fixes, apply them properly
-3. Remove temporary directory from main
-4. Should not be in root of production repository
+**Rationale:**
+- Historical Copilot cleanup artifacts (circa 2026-05-18)
+- Root-level agent audit folders violate documentation conventions
+- No active code or configs, only historical documentation
+- Content preserved for reference but removed from active tree
 
-**Investigation needed:**
-```bash
-ls -la CLAUDE_AUDIT_FIX/
-```
+**Commit:** 577d4a0
 
 ---
 
