@@ -1,3 +1,25 @@
+// Vuetify configured with Lexend Deca to match the IoT Dashboard.
+// Lexend Deca is loaded from Google Fonts via index.html for fast first paint.
+// SF Mono / Fira Code is the machine-text family (entity ids, terminal, etc).
 @use 'vuetify' with (
-    $body-font-family: ('Inter', sans-serif)
+    $body-font-family: ('Lexend Deca', 'Inter', system-ui, -apple-system, sans-serif)
 );
+
+// Global type tokens (consumable from any component scope).
+:root {
+    --font-body: 'Lexend Deca', 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', ui-monospace, Menlo, Monaco, Consolas, monospace;
+}
+
+// Machine text uses mono family.
+code, pre, kbd, samp,
+.font-mono,
+[class*='entity-id'],
+[class*='sensor-value'] {
+    font-family: var(--font-mono);
+}
+
+// Reset some hard-coded purple bleed from upstream that would survive theme swap.
+body, html {
+    background-color: #0f172a;
+}

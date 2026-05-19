@@ -1,5 +1,5 @@
 <template>
-  <v-app-bar app clipped-left color="deep-purple accent-4">
+  <v-app-bar app clipped-left color="surface" elevation="0" class="iot-appbar">
     <v-app-bar-nav-icon variant="text" @click="emits('update:modelValue', !modelValue)" class="mt-1">
       <v-badge v-if="!modelValue && drawerBadgeCount"
         :content="drawerBadgeCount.toString()" color="error">
@@ -7,9 +7,9 @@
       </v-badge>
       <v-icon v-else>{{ getFaPrefix('fa-bars') }}</v-icon>
     </v-app-bar-nav-icon>
-    <v-toolbar-title class="scrypted-title mr-4" style="flex: none;"><a class="hide-link"
+    <v-toolbar-title class="scrypted-title mr-4" style="flex: none;"><a class="hide-link iot-brand"
         href="#/">Scrypted</a></v-toolbar-title>
-    <div v-if="connectedClient?.serverVersion && !isTouchPhone" class="pt-1" style="color: lightgrey">v{{
+    <div v-if="connectedClient?.serverVersion && !isTouchPhone" class="pt-1 iot-version">v{{
       connectedClient?.serverVersion }}</div>
     <v-spacer></v-spacer>
     <v-autocomplete v-if="!isTouchDevice" max-width="320" @update:search="v => search = v" :items="choices" hide-details
@@ -172,5 +172,29 @@ const { pluginUpdateCount } = getPluginMonitors();
 .hide-link {
   text-decoration: none;
   color: inherit;
+}
+
+/* IoT Dashboard signature look on the top bar. */
+.iot-appbar {
+  /* Subtle bottom rule + soft cyan glow under the bar. */
+  border-bottom: 1px solid rgba(34, 211, 238, 0.12);
+  box-shadow:
+    0 1px 0 rgba(34, 211, 238, 0.06),
+    0 8px 24px rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(8px);
+}
+.iot-brand {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: linear-gradient(135deg, #22d3ee 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.iot-version {
+  font-family: var(--font-mono, 'SF Mono', monospace);
+  font-size: 0.7rem;
+  color: rgba(148, 163, 184, 0.7);
+  letter-spacing: 0.04em;
 }
 </style>

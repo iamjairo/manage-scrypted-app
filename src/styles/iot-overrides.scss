@@ -1,0 +1,218 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// IoT Dashboard look — Vuetify component overrides
+//
+// Applied globally after Vuetify's base styles. Scoped to the mediamtxNeon
+// theme via the html[data-theme] selector so light/dark themes remain
+// untouched.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Brand tokens (mirror src/plugins/vuetify.ts).
+$iot-slate-900: #0f172a;
+$iot-slate-800: #1e293b;
+$iot-slate-700: #334155;
+$iot-slate-400: #94a3b8;
+$iot-cyan-400:  #22d3ee;
+$iot-cyan-500:  #06b6d4;
+$iot-violet-500: #8b5cf6;
+$iot-border:    rgba(148, 163, 184, 0.12);
+$iot-glow:      rgba(34, 211, 238, 0.12);
+
+// Vuetify exposes the theme name on the v-application element root. We also
+// set it on <html> through Vuetify's runtime; both selectors hit the same
+// surface, but scoping to .v-theme--mediamtxNeon is most reliable.
+.v-theme--mediamtxNeon {
+
+  // ── Cards ───────────────────────────────────────────────────────────────
+  .v-card {
+    background-color: rgba(30, 41, 59, 0.85);
+    border: 1px solid $iot-border;
+    backdrop-filter: blur(6px);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.25s ease,
+      border-color 0.25s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      border-color: rgba(34, 211, 238, 0.25);
+      box-shadow:
+        0 8px 28px rgba(0, 0, 0, 0.4),
+        0 0 18px $iot-glow;
+    }
+  }
+
+  // Card title / subtitle subtle brand tint
+  .v-card-title { color: #e2e8f0; }
+  .v-card-subtitle { color: $iot-slate-400; }
+
+  // ── Buttons ─────────────────────────────────────────────────────────────
+  .v-btn {
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-weight: 500;
+
+    &.v-btn--variant-flat.bg-primary,
+    &.v-btn--variant-elevated.bg-primary {
+      background: linear-gradient(135deg, $iot-cyan-400 0%, $iot-cyan-500 100%) !important;
+      color: $iot-slate-900 !important;
+      box-shadow: 0 6px 18px rgba(34, 211, 238, 0.35);
+
+      &:hover {
+        box-shadow: 0 8px 24px rgba(34, 211, 238, 0.5);
+      }
+    }
+
+    &.v-btn--variant-outlined {
+      border-color: rgba(34, 211, 238, 0.4);
+
+      &:hover {
+        background-color: rgba(34, 211, 238, 0.08);
+      }
+    }
+
+    &.v-btn--variant-text {
+      color: $iot-cyan-400;
+    }
+  }
+
+  // ── Inputs ──────────────────────────────────────────────────────────────
+  .v-field {
+    border-radius: 10px !important;
+
+    &.v-field--variant-outlined {
+      .v-field__outline__start,
+      .v-field__outline__end,
+      .v-field__outline__notch::before,
+      .v-field__outline__notch::after {
+        border-color: $iot-border;
+      }
+
+      &.v-field--focused {
+        .v-field__outline__start,
+        .v-field__outline__end,
+        .v-field__outline__notch::before,
+        .v-field__outline__notch::after {
+          border-color: $iot-cyan-400 !important;
+          box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25);
+        }
+      }
+    }
+
+    .v-field__field {
+      background-color: rgba(15, 23, 42, 0.6);
+    }
+  }
+
+  // Labels above input fields
+  .v-label {
+    color: $iot-slate-400;
+    letter-spacing: 0.02em;
+  }
+
+  // ── Dialogs ─────────────────────────────────────────────────────────────
+  .v-overlay__scrim {
+    background-color: rgba(2, 6, 23, 0.7);
+    backdrop-filter: blur(4px);
+  }
+
+  .v-dialog .v-card {
+    background-color: $iot-slate-900;
+    border: 1px solid rgba(34, 211, 238, 0.18);
+    box-shadow:
+      0 24px 48px rgba(0, 0, 0, 0.6),
+      0 0 24px rgba(34, 211, 238, 0.1);
+
+    &:hover {
+      transform: none; // dialogs shouldn't lift on hover
+    }
+  }
+
+  // ── Data tables ─────────────────────────────────────────────────────────
+  .v-data-table,
+  .v-table {
+    background-color: transparent !important;
+
+    th {
+      color: $iot-slate-400 !important;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 11px;
+      border-bottom: 1px solid $iot-border !important;
+    }
+
+    td {
+      border-bottom: 1px solid rgba(148, 163, 184, 0.06) !important;
+      color: #e2e8f0;
+    }
+
+    tbody tr {
+      transition: background-color 0.12s ease;
+
+      &:hover {
+        background-color: rgba(34, 211, 238, 0.04) !important;
+      }
+    }
+  }
+
+  // ── Lists (filter chips, etc.) ──────────────────────────────────────────
+  .v-chip {
+    border-radius: 8px !important;
+
+    &.v-chip--variant-elevated.bg-primary,
+    &.v-chip--variant-flat.bg-primary {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(139, 92, 246, 0.18)) !important;
+      color: $iot-cyan-400 !important;
+      border: 1px solid rgba(34, 211, 238, 0.3);
+    }
+  }
+
+  // ── Snackbar (the "Disconnected" warning) ───────────────────────────────
+  .v-snackbar__wrapper {
+    border-radius: 12px;
+    border: 1px solid rgba(250, 204, 21, 0.3);
+    background-color: rgba(15, 23, 42, 0.95) !important;
+    backdrop-filter: blur(8px);
+    color: #facc15 !important;
+  }
+
+  // ── Scrollbars (WebKit) ─────────────────────────────────────────────────
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.5);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.25);
+    border-radius: 6px;
+
+    &:hover {
+      background: rgba(34, 211, 238, 0.4);
+    }
+  }
+
+  // ── Selection highlight ─────────────────────────────────────────────────
+  ::selection {
+    background: rgba(34, 211, 238, 0.3);
+    color: #ffffff;
+  }
+
+  // ── Code blocks (Monaco-adjacent) ───────────────────────────────────────
+  code, pre, kbd {
+    background-color: rgba(15, 23, 42, 0.7) !important;
+    color: $iot-cyan-400 !important;
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+  pre {
+    padding: 12px 14px;
+  }
+
+  // ── Section headers (page titles like "DEVICES") ────────────────────────
+  .v-toolbar__title {
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+}
