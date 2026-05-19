@@ -44,10 +44,11 @@ If any item above is unchecked, declare **No-Go** for Phase 1 completion.
 ## Phase 2 — Implementation Tracks (Post-Exit Execution)
 
 ### Track A: UI remaster for dashboard alignment (highest priority)
-- [ ] Define target integration model (embedded surface vs linked app vs shared shell).
-- [ ] Define adaptation path from current stack to React+Vite+Tailwind compatibility strategy.
-- [ ] Deliver component/theming/navigation parity requirements.
-- [ ] Validate UX flows in dashboard context (not standalone only).
+- [x] Define target integration model (embedded surface vs linked app vs shared shell).
+- [x] Define adaptation path from current stack to React+Vite+Tailwind compatibility strategy.
+- [x] Deliver component/theming/navigation parity requirements.
+- [x] Validate UX flows in dashboard context (not standalone only).
+  - Evidence: [`PHASE2A-UI-REMASTER-2026-05-19.md`](PHASE2A-UI-REMASTER-2026-05-19.md)
 
 ### Track B: Service/app runtime model (server app decision)
 - [ ] Select canonical runtime path (Electron, Tauri, or no desktop runtime in first release).
